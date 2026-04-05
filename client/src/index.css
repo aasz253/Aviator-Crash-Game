@@ -3,9 +3,6 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-border;
-  }
   body {
     @apply bg-aviator-dark text-white;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

@@ -26,7 +26,7 @@ export default function GamePage() {
           <div className="lg:col-span-2 space-y-4">
             <GameDisplay />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-2">
               <BetPanel panelId={1} />
               <BetPanel panelId={2} />
             </div>
@@ -38,9 +38,9 @@ export default function GamePage() {
         </div>
       </main>
 
-      <footer className="mt-8 py-4 text-center text-gray-600 text-sm border-t border-gray-800">
-        <p>Aviator Crash Game &copy; 2024 - Play Responsibly</p>
-      </footer>
+        <footer className="mt-8 py-4 text-center text-gray-600 text-sm border-t border-gray-800">
+          <p>Aviator Crash Game &copy; sifunacodex2026 - Play Responsibly</p>
+        </footer>
     </div>
   );
 }

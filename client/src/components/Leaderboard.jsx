@@ -1,9 +1,39 @@
-import { useGame } from '../context/GameContext';
+import { useState, useEffect } from 'react';
+import { useGame, useAuth } from '../context/GameContext';
 
 export default function Leaderboard() {
-  const { currentBets, leaderboard } = useGame();
+  const { state, currentBets, multiplier } = useGame();
+  const { gameMode, user } = useAuth();
+  const [allBets, setAllBets] = useState([]);
 
-  const allPlayers = [...currentBets];
+  useEffect(() => {
+    if (state === 'waiting') {
+      setAllBets([]);
+    }
+
+    if ((state === 'in_progress' || state === 'crashed') && currentBets.length > 0) {
+      setAllBets(prev => {
+        const existing = [...prev];
+        currentBets.forEach(bet => {
+          const exists = existing.find(e => e.id === bet.id);
+          if (!exists) {
+            existing.push({ ...bet });
+          } else {
+            if (bet.status !== exists.status) {
+              exists.status = bet.status;
+              exists.multiplier = bet.multiplier;
+              exists.winAmount = bet.winAmount;
+            }
+          }
+        });
+        return existing;
+      });
+    }
+  }, [state, currentBets]);
+
+  const cashedOut = allBets.filter(b => b.status === 'cashed_out');
+  const crashed = allBets.filter(b => b.status === 'crashed');
+  const pending = allBets.filter(b => b.status === 'pending');
 
   return (
     <div className="card">
@@ -14,74 +44,98 @@ export default function Leaderboard() {
         Live Bets
       </h3>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-gray-400 border-b border-gray-700">
-              <th className="text-left py-2 px-2 font-medium">PLAYER</th>
-              <th className="text-right py-2 px-2 font-medium">BET KES</th>
-              <th className="text-right py-2 px-2 font-medium">WIN KES</th>
-            </tr>
-          </thead>
-          <tbody>
-            {allPlayers.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="text-center py-8 text-gray-500">
-                  No bets placed yet
-                </td>
-              </tr>
-            ) : (
-              allPlayers.map((player, index) => (
-                <tr
-                  key={index}
-                  className={`border-b border-gray-800 ${
-                    player.status === 'cashed_out' ? 'bg-green-900/10' : ''
-                  }`}
-                >
-                  <td className="py-2 px-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-aviator-purple flex items-center justify-center text-xs font-bold">
-                        {player.username?.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-gray-300">{player.username}</span>
-                    </div>
-                  </td>
-                  <td className="text-right py-2 px-2 text-gray-300">
-                    {player.betAmount.toFixed(2)}
-                  </td>
-                  <td className="text-right py-2 px-2">
-                    {player.status === 'cashed_out' ? (
-                      <span className="text-aviator-green font-bold">
-                        {player.winAmount.toFixed(2)}
-                      </span>
-                    ) : player.status === 'crashed' ? (
-                      <span className="text-aviator-accent">Lost</span>
-                    ) : (
-                      <span className="text-gray-500">-</span>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {leaderboard.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-gray-700">
-          <h4 className="text-sm font-medium text-gray-400 mb-2">Recent Cashouts</h4>
-          <div className="space-y-2 max-h-40 overflow-y-auto">
-            {Array.isArray(leaderboard)
-              ? leaderboard.slice(-10).reverse().map((entry, index) => (
-                  <div key={index} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-300">{entry.player || entry.username}</span>
-                    <span className="text-aviator-green font-bold">
-                      +{entry.winAmount?.toFixed(2) || '0.00'} KES
-                    </span>
-                  </div>
-                ))
-              : null}
+      {cashedOut.length > 0 && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+            <span className="font-medium">CASHED OUT</span>
+            <span>{cashedOut.length} player{cashedOut.length > 1 ? 's' : ''}</span>
           </div>
+          <div className="space-y-1">
+            {cashedOut.slice().reverse().map((player, index) => (
+              <div
+                key={player.id || index}
+                className="flex items-center justify-between bg-green-900/20 border border-green-800/50 rounded-lg px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center text-xs font-bold">
+                    {player.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-gray-300 text-sm">{player.username}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-green-400 bg-green-900/50 px-2 py-0.5 rounded">
+                    {player.multiplier?.toFixed(2)}x
+                  </span>
+                  <span className="text-green-400 font-bold text-sm">
+                    {player.winAmount?.toFixed(2)} KES
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {crashed.length > 0 && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+            <span className="font-medium">CRASHED</span>
+            <span>{crashed.length} player{crashed.length > 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-1">
+            {crashed.slice().reverse().map((player, index) => (
+              <div
+                key={player.id || index}
+                className="flex items-center justify-between bg-red-900/20 border border-red-800/50 rounded-lg px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-xs font-bold">
+                    {player.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-gray-300 text-sm">{player.username}</span>
+                </div>
+                <span className="text-red-400 font-bold text-sm">
+                  -{player.betAmount.toFixed(2)} KES
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pending.length > 0 && state === 'in_progress' && (
+        <div className="mb-3">
+          <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
+            <span className="font-medium">IN GAME</span>
+            <span>{pending.length} player{pending.length > 1 ? 's' : ''}</span>
+          </div>
+          <div className="space-y-1">
+            {pending.map((player, index) => (
+              <div
+                key={player.id || index}
+                className="flex items-center justify-between bg-aviator-darker rounded-lg px-3 py-2"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-6 rounded-full bg-aviator-purple flex items-center justify-center text-xs font-bold">
+                    {player.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-gray-300 text-sm">{player.username}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">{player.betAmount.toFixed(2)}</span>
+                  <span className="text-aviator-orange font-bold text-sm">
+                    {(player.betAmount * multiplier).toFixed(2)} KES
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {allBets.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          {state === 'waiting' ? 'Waiting for bets...' : 'No bets placed'}
         </div>
       )}
     </div>

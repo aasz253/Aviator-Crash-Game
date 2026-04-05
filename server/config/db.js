@@ -1,13 +1,18 @@
 const mongoose = require('mongoose');
 
+let isConnected = false;
+
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI);
+    const conn = await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    isConnected = true;
   } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
+    console.warn(`MongoDB not available, running in offline mode`);
+    isConnected = false;
   }
 };
 
-module.exports = connectDB;
+module.exports = { connectDB, getConnected: () => isConnected };

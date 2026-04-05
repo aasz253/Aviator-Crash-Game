@@ -1,7 +1,37 @@
+import { useEffect, useRef } from 'react';
 import { useGame } from '../context/GameContext';
+import { aviatorSound } from '../utils/sound';
 
 export default function GameDisplay() {
   const { state, multiplier, roundNumber, countdown, crashPoint } = useGame();
+  const prevState = useRef(state);
+  const prevCountdownInt = useRef(Math.ceil(countdown));
+
+  useEffect(() => {
+    aviatorSound.init();
+
+    if (state === 'in_progress' && prevState.current === 'waiting') {
+      aviatorSound.startEngine();
+    }
+
+    if (state === 'crashed' && prevState.current === 'in_progress') {
+      aviatorSound.playCrash();
+    }
+
+    if (state === 'waiting') {
+      const sec = Math.ceil(countdown);
+      if (sec !== prevCountdownInt.current && sec <= 3 && sec > 0) {
+        aviatorSound.playCountdown();
+      }
+      prevCountdownInt.current = sec;
+    }
+
+    if (state === 'in_progress') {
+      aviatorSound.updateEngine(multiplier);
+    }
+
+    prevState.current = state;
+  }, [state, multiplier, countdown]);
 
   const getMultiplierClass = () => {
     switch (state) {
@@ -57,7 +87,6 @@ export default function GameDisplay() {
       <div className={`relative z-10 text-center ${state === 'in_progress' ? 'flying' : ''} ${state === 'crashed' ? 'crashed' : ''}`}>
         {state === 'waiting' && (
           <>
-            <p className="text-gray-400 text-lg mb-2">Round #{roundNumber}</p>
             <p className="text-4xl font-bold text-white mb-4">
               {countdown > 0 ? `Starting in ${countdown.toFixed(1)}s` : 'Starting...'}
             </p>
@@ -73,9 +102,6 @@ export default function GameDisplay() {
         {(state === 'in_progress' || state === 'crashed') && (
           <div className={getMultiplierClass()}>
             <div className="multiplier-display">{getDisplayValue()}</div>
-            {state === 'in_progress' && (
-              <p className="text-gray-400 text-lg mt-2">Round #{roundNumber}</p>
-            )}
             {state === 'crashed' && (
               <p className="text-aviator-accent text-2xl font-bold mt-4">FLEW AWAY!</p>
             )}
@@ -83,9 +109,6 @@ export default function GameDisplay() {
         )}
       </div>
 
-      <div className="absolute top-4 left-4 bg-aviator-card/80 backdrop-blur rounded-lg px-3 py-1">
-        <span className="text-sm text-gray-300">Round: #{roundNumber}</span>
-      </div>
     </div>
   );
 }

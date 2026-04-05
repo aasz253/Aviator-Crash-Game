@@ -18,6 +18,16 @@ class GameEngine {
     this.WAITING_DURATION = 8000;
     this.TICK_INTERVAL = 100;
     this.generateCrashPoint();
+    this.initRoundNumber();
+  }
+
+  async initRoundNumber() {
+    try {
+      const lastRound = await Round.findOne().sort({ roundNumber: -1 });
+      this.roundNumber = lastRound ? lastRound.roundNumber : 0;
+    } catch (error) {
+      this.roundNumber = 0;
+    }
     this.startNewRound();
   }
 

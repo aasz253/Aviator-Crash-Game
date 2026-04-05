@@ -12,6 +12,8 @@ export function AuthProvider({ children }) {
     token: localStorage.getItem('token') || null,
     loading: false,
     error: null,
+    demoBalance: parseFloat(localStorage.getItem('demoBalance')) || 5000,
+    gameMode: localStorage.getItem('gameMode') || 'demo',
   });
 
   useEffect(() => {
@@ -23,6 +25,14 @@ export function AuthProvider({ children }) {
       localStorage.removeItem('token');
     }
   }, [state.user, state.token]);
+
+  useEffect(() => {
+    localStorage.setItem('demoBalance', state.demoBalance.toString());
+  }, [state.demoBalance]);
+
+  useEffect(() => {
+    localStorage.setItem('gameMode', state.gameMode);
+  }, [state.gameMode]);
 
   const login = async (phoneNumber, password) => {
     dispatch({ type: 'LOGIN_START' });
@@ -68,8 +78,23 @@ export function AuthProvider({ children }) {
     dispatch({ type: 'UPDATE_BALANCE', payload: balance });
   };
 
+  const updateDemoBalance = (amount) => {
+    dispatch({ type: 'UPDATE_DEMO_BALANCE', payload: amount });
+  };
+
+  const setGameMode = (mode) => {
+    dispatch({ type: 'SET_GAME_MODE', payload: mode });
+  };
+
+  const resetDemoBalance = () => {
+    dispatch({ type: 'UPDATE_DEMO_BALANCE', payload: 5000 });
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, updateBalance }}>
+    <AuthContext.Provider value={{
+      ...state, login, register, logout, updateBalance,
+      updateDemoBalance, setGameMode, resetDemoBalance,
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -90,6 +115,10 @@ function authReducer(state, action) {
       return { user: null, token: null, loading: false, error: null };
     case 'UPDATE_BALANCE':
       return { ...state, user: { ...state.user, balance: action.payload } };
+    case 'UPDATE_DEMO_BALANCE':
+      return { ...state, demoBalance: action.payload };
+    case 'SET_GAME_MODE':
+      return { ...state, gameMode: action.payload };
     default:
       return state;
   }
@@ -193,8 +222,22 @@ export function GameProvider({ children }) {
     }
   };
 
+  const addLocalBet = (username, betAmount) => {
+    setGameState({ type: 'ADD_LOCAL_BET', payload: { username, betAmount } });
+  };
+
+  const updateLocalBet = (username, status, multiplier, winAmount) => {
+    setGameState({ type: 'UPDATE_LOCAL_BET', payload: { username, status, multiplier, winAmount } });
+  };
+
+  const clearLocalBets = () => {
+    setGameState({ type: 'CLEAR_LOCAL_BETS' });
+  };
+
   return (
-    <GameContext.Provider value={{ ...gameState, placeBet, cashout }}>
+    <GameContext.Provider value={{
+      ...gameState, placeBet, cashout, addLocalBet, updateLocalBet, clearLocalBets,
+    }}>
       {children}
     </GameContext.Provider>
   );
@@ -205,22 +248,22 @@ function gameReducer(state, action) {
     case 'GAME_STATE':
       return { ...state, ...action.payload };
     case 'ROUND_START':
-      return { 
-        ...state, 
-        state: 'in_progress', 
-        multiplier: 1.0, 
-        myCashout: null, 
-        betResult: null, 
+      return {
+        ...state,
+        state: 'in_progress',
+        multiplier: 1.0,
+        myCashout: null,
+        betResult: null,
         cashoutResult: null,
-        currentBets: [],
+        currentBets: state.currentBets,
         leaderboard: [],
       };
     case 'MULTIPLIER_UPDATE':
       return { ...state, multiplier: action.payload.multiplier };
     case 'CRASH':
-      return { 
-        ...state, 
-        state: 'crashed', 
+      return {
+        ...state,
+        state: 'crashed',
         crashPoint: action.payload.crashPoint,
         history: [action.payload.crashPoint, ...state.history].slice(0, 50),
       };
@@ -237,6 +280,35 @@ function gameReducer(state, action) {
       return { ...state, cashoutResult: action.payload };
     case 'SOCKET_ERROR':
       return { ...state, error: action.payload };
+    case 'ADD_LOCAL_BET':
+      return {
+        ...state,
+        currentBets: [...state.currentBets, {
+          id: action.payload.id,
+          username: action.payload.username,
+          betAmount: action.payload.betAmount,
+          status: 'pending',
+          winAmount: 0,
+          multiplier: null,
+          panelId: action.payload.panelId,
+        }],
+      };
+    case 'UPDATE_LOCAL_BET':
+      return {
+        ...state,
+        currentBets: state.currentBets.map(bet =>
+          bet.id === action.payload.id
+            ? {
+                ...bet,
+                status: action.payload.status,
+                multiplier: action.payload.multiplier,
+                winAmount: action.payload.winAmount,
+              }
+            : bet
+        ),
+      };
+    case 'CLEAR_LOCAL_BETS':
+      return { ...state, currentBets: [] };
     case 'SET_MY_BET':
       return { ...state, myBet: action.payload };
     case 'SET_MY_CASHOUT':
