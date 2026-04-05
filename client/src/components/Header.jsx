@@ -70,8 +70,8 @@ export default function Header() {
             </button>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 bg-aviator-darker rounded-lg px-3 py-1.5">
-            <span className="text-gray-400 text-xs">
+          <div className="flex items-center gap-1.5 bg-aviator-darker rounded-lg px-2.5 py-1.5 border border-gray-700">
+            <span className="text-gray-400 text-xs hidden sm:inline">
               {gameMode === 'demo' ? 'Demo:' : 'Balance:'}
             </span>
             <span className={`font-bold text-sm ${gameMode === 'demo' ? 'text-aviator-purple' : 'text-aviator-green'}`}>
@@ -124,13 +124,6 @@ export default function Header() {
 
       {menuOpen && (
         <div className="sm:hidden mt-3 pb-3 border-t border-gray-700 pt-3 space-y-3">
-          <div className="flex items-center justify-between bg-aviator-darker rounded-lg px-3 py-2">
-            <span className="text-gray-400 text-sm">Balance:</span>
-            <span className={`font-bold ${gameMode === 'demo' ? 'text-aviator-purple' : 'text-aviator-green'}`}>
-              {currentBalance.toFixed(2)} KES
-            </span>
-          </div>
-
           {gameMode === 'demo' && demoBalance < 10 && (
             <button
               onClick={() => { resetDemoBalance(); setMenuOpen(false); }}

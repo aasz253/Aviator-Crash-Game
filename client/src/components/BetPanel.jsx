@@ -226,35 +226,45 @@ export default function BetPanel({ panelId = 1 }) {
         </button>
       )}
 
-      {!hasBet && state === 'in_progress' && (
-        <button
-          disabled
-          className={`w-full text-lg py-3 px-6 rounded-lg font-bold transition-all ${
-            crashFlash
-              ? 'bg-red-600 text-white animate-pulse'
-              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          {crashFlash ? 'FLEW AWAY!' : 'WAITING FOR NEXT ROUND'}
-        </button>
-      )}
-
       {hasBet && state === 'in_progress' && !hasCashedOut && (
         <div className="w-full py-3 bg-aviator-orange/20 border border-aviator-orange/50 rounded-lg text-center">
           <span className="text-aviator-orange font-bold">IN GAME: {currentBet?.toFixed(2)} KES</span>
         </div>
       )}
 
-      {hasCashedOut && (
+      {hasCashedOut && state === 'in_progress' && (
         <div className="w-full py-3 bg-green-900/50 border border-green-700 rounded-lg text-center">
           <span className="text-green-400 font-bold">Won {winAmount.toFixed(2)} KES!</span>
         </div>
+      )}
+
+      {hasCashedOut && state === 'waiting' && (
+        <button
+          onClick={placeBetAction}
+          disabled={getBalance() < getBetAmount()}
+          className={`w-full text-lg py-3 px-6 rounded-lg font-bold transition-all ${
+            getBalance() >= getBetAmount()
+              ? 'bg-aviator-green text-black hover:bg-green-400 active:scale-95'
+              : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          BET {getBetAmount().toFixed(2)} KES
+        </button>
       )}
 
       {state === 'crashed' && hasBet && !hasCashedOut && (
         <div className="w-full py-3 bg-red-900/50 border border-red-700 rounded-lg text-center">
           <span className="text-red-400 font-bold">Lost {currentBet?.toFixed(2)} KES</span>
         </div>
+      )}
+
+      {state === 'crashed' && crashFlash && (
+        <button
+          disabled
+          className="w-full text-lg py-3 px-6 rounded-lg font-bold bg-red-600 text-white animate-pulse"
+        >
+          FLEW AWAY!
+        </button>
       )}
 
       <div className="mt-3">
